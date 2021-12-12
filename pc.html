@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>p</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
+<style>
+
+.styled-table {
+    border-collapse: collapse;
+    margin: 25px 0;
+    font-size: 0.9em;
+    font-family: sans-serif;
+    min-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.styled-table thead tr {
+    background-color: #009879;
+    color: #ffffff;
+    text-align: left;
+}
+
+.styled-table th,
+.styled-table td {
+    padding: 12px 15px;
+}
+
+.styled-table tbody tr {
+    border-bottom: 1px solid #dddddd;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+    background-color: #f3f3f3;
+}
+
+.styled-table tbody tr:last-of-type {
+    border-bottom: 2px solid #009879;
+}
+
+.styled-table tbody tr.active-row {
+    font-weight: bold;
+    color: #009879;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="output">waiting for action</div>
+<p class="unbroken">ggg</p>
+<p class="broken"></p>
+
+<!--<table id="myTable">
+  <tbody>
+    <tr>...</tr>
+    <tr>...</tr>
+  </tbody>
+</table>-->
+
+<table id="myTable" class="styled-table">
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Call</th>
+            <th>Put</th>
+            <th>Diff</th>
+            <th>PCR</th>
+            <th>Option Signal</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+    </tbody>
+</table>
+
+<canvas id="myChart" style="width:100%;max-width:600px"></canvas>
+<script>
+
+//Graph Start----------------------------------------------------------------------------------------------------
+var xValues = [];
+var yValues = [];
+//var xValues = [50,60,70,80,90,100,110,120,130,140,150];
+//var yValues = [7,8,8,9,9,9,10,11,14,14,15];
+var ctx = $("#myChart");
+var myChart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: xValues,
+    datasets: [{
+      fill: false,
+      lineTension: 0,
+      backgroundColor: "rgba(0,0,255,1.0)",
+      borderColor: "rgba(0,0,255,0.1)",
+      data: yValues
+    }]
+  },
+  /*options: {
+    legend: {title: false},
+    scales: {
+      yAxes: [{ticks: {min: 6, max:16}}],
+    }
+  }*/
+});
+//Graph End-----------------------------------------------------------------------------------------------------------
+
+
+    getAjax();
+/*setInterval(function(){ 
+    getAjax();   
+}, (1 * 10000));*/
+
+function ProcessData(data)
+{
+    var data = JSON.parse(data);
+
+            /*function formatAMPM() {
+                var date = new Date();
+                var hours = date.getHours();
+                var minutes = date.getMinutes();
+                var ampm = hours >= 12 ? 'pm' : 'am';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                minutes = minutes < 10 ? '0'+minutes : minutes;
+                var strTime = hours + ':' + minutes + ' ' + ampm;
+                return strTime;
+            }*/
+
+            var date = new Date();
+                var hours = date.getHours() % 12;
+                var minutes = date.getMinutes();
+                //var ampm = hours >= 12 ? 'pm' : 'am';
+                hours = hours ? hours : 12;
+                minutes = minutes < 10 ? '0'+minutes : minutes;
+            var currentTime = hours + ":" + minutes;
+            //var currentTime = (dt.getHours() % 12) + ":" + dt.getMinutes();
+
+            var callOI = parseInt(data["filtered"]["CE"]["totOI"]);
+            var putOI = parseInt(data["filtered"]["PE"]["totOI"]);
+            var difference = putOI - callOI;
+            var pcr = (putOI / callOI).toFixed(2);
+            var optionSignal = pcr < 1 ? 'Sell' : 'Buy';
+
+           $('#myTable > tbody:last-child').append('<tr><td>' + currentTime + '</td><td>' + callOI + '</td><td>' + putOI + '</td><td>' + difference + '</td><td>' + pcr +'</td><td>' + optionSignal + '</td></tr>');
+
+           xValues.push(currentTime);
+           yValues.push(difference);
+
+           myChart.update();
+}
+
+function getAjax() {
+  $.ajax({
+    type:"post",
+      url:'tr.php',
+      crossDomain: true,
+        dataType: "json",
+      data: {fun : 'initial'},
+      complete: function (response) {
+          $('#output').append('OKAY');
+          var length = parseInt(response.responseText);
+            $("#output").append(response.responseText);
+            //let result = response.responseText.substring(1);
+
+            //ProcessData(response.responseText);
+            
+        if(length < 1)
+          {
+              $('#output').append('RELOADING');
+              //$("#output").append(response.responseText);
+              //$("#output").append("<li>Appended item</li>");
+              //alert('RELOADING');
+              getAjax();
+              return;
+          }
+          else
+          {
+            $('#output').html('Done');
+            $("#output").append(response.responseText.length);
+
+            let result = response.responseText.substring(1);
+
+            ProcessData(result);
+
+            /*//$("#output").append(response.responseText.length);
+            let result = response.responseText.substring(1);
+
+            var i = 0;
+            var data = JSON.parse(result);
+            $("#output").append(data["filtered"]["CE"]["totOI"]);
+            $("#output").append(data["filtered"]["CE"]["totVol"]);
+            $("#output").append(data["filtered"]["PE"]["totOI"]);
+            $("#output").append(data["filtered"]["PE"]["totVol"]);*/
+          }
+      },
+      error: function () {
+          $('#output').html('Bummer: there was an error!');
+      }
+  });
+}
+
+   /* $.fn.myfunction = function () {
+    $.ajax({
+    type:"post",
+      url:'tr.php',
+      datatype:"html",
+      data: {function : 'initial'},
+      complete: function (response) {
+          //$('#output').html(response.responseText);
+      },
+      error: function () {
+          $('#output').html('Bummer: there was an error!');
+      }
+  });
+};
+
+$.ajax({
+    type:"post",
+      url:'tr.php',
+      datatype:"html",
+      data: {function : 'query2'},
+      complete: function (response) {
+          var length = parseInt(response.responseText);
+          
+          //$('#output').html(length);
+      },
+      error: function () {
+          $('#output').html('Bummer: there was an error!');
+      }
+  });*/
+
+</script>
+</body>
+</html>
