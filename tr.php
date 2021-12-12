@@ -81,7 +81,8 @@ curl_close($curl);
 
 
 
-$base = 'https://www.nseindia.com/api/option-chain-indices?symbol=BANKNIFTY';
+//$base = 'https://www.nseindia.com/api/option-chain-indices?symbol=BANKNIFTY';
+$base = 'https://www.google.com';
 
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
