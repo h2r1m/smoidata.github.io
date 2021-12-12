@@ -105,7 +105,7 @@ curl_close($curl);
         
     $data =  json_decode($str, true);
     echo sizeof($data["filtered"]);
-
+$str = 'sjguhdbcidjncjienciejnciljenciebcuhdb';
 echo $str; 
 //echo $data;
 
